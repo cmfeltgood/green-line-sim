@@ -8,29 +8,29 @@ This is the third revision of this project, the first getting dropped after maki
 
 ### Done so far
 
-. Get Beacon St intersection data
-. Make a train!
-. Have the train go forward on a basic track
+- Get Beacon St intersection data
+- Make a train!
+- Have the train go forward on a basic track
 
 ### To-Do
 
-. Make tracks for intersections
-. Make tracks for stations (basic 10 second timer for now)
-. Combine my data with the MBTA's intersection data
-. Create a data importer for the combined track data
-. Export tests from multiple runs.
-. Check for accuracy of train running times
-. *If innacurate, consider optional steps below*
-. Create test cases for changes to the branch
-. Compare data from test cases
+- Make tracks for intersections
+- Make tracks for stations (basic 10 second timer for now)
+- Combine my data with the MBTA's intersection data
+- Create a data importer for the combined track data
+- Export tests from multiple runs.
+- Check for accuracy of train running times
+- *If innacurate, consider optional steps below*
+- Create test cases for changes to the branch
+- Compare data from test cases
 
 ### Optional, for more accurate trains
 
-. Add more logic for station stop times
-. Nudge acceleration/decceleration rates
+- Add more logic for station stop times
+- Nudge acceleration/decceleration rates
 
 ## After C Branch Test
 
-. Allow for tracks to separate/merge
-. Make trains stop for each other
-. Collect a boatload more data
+- Allow for tracks to separate/merge
+- Make trains stop for each other
+- Collect a boatload more data
