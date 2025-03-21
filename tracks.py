@@ -129,12 +129,75 @@ class Intersection(Track):
 
 
 class Station(Track):
-    def __init__(self, id=-1, len=0, speedLimit=44):
+    def __init__(self, id=-1, len=150, speedLimit=44, boardTime:int = 10):
         super().__init__(id, len, speedLimit)
+        self._boardTime = boardTime
+    
+    def tick(self):
+        needsPopped = 0
+        for t in self._trains:
+            if t.hasBoarded():
+                #Check for needed state of train
+                speed, dist = self.getNextSpeedChange(t)
+                if speed == None:
+                    t.accelerate()
+                else:
+                    t.targetSpeed(dist, speed)
+
+                t.tick()
+                print(t)
+
+                #check if needs to move on
+                if t.getPosition() > self._len:
+                    needsPopped += 1
+                    t.setPosition(t.getPosition()-self._len)
+            
+            else:
+                if t.getState() == State.BOARD:
+                    t.tick()
+                else:
+                    t.targetSpeed(self._len-5-t.getPosition(), 0)
+                    _, s, _ = t.tick()
+                    if s==0:
+                        t.board(self._boardTime)
+        
+            print(t)
+
+        self._next.tick()
+        
+        #trains should still be in order
+        #NOTE: Make sure trains are in order
+        for i in range(needsPopped):
+            self._next.addTrain(self._trains.pop())
+        
+
+    
+    def gnscRec(self, f:Callable[[float],tuple[float,float]], len:float, diff:float, speed:float, dist:float)->tuple[float, float]:
+        """Recursive helper function for getNextSpeedChange()"""
+        
+        #If needs to stop, add stop
+        len+=self._len-20
+    
+        min, max = f(0)
+        #print(f"{min:.2f}, {len:.2f}, {max:.2f}")
+        if min <= len and max >= len:
+            newDiff = max - len
+            if newDiff > diff:
+                if len > 500:
+                    return 0, len
+                else:
+                    return self.getNext().gnscRec(f, len, newDiff, 0, len)
+        
+        #Otherwise add nothing
+        if len > 500:
+            return speed, dist
+        return self.getNext().gnscRec(f, len, diff, speed, dist)
+
 
 class Start(Track):
     def __init__(self, id=-1, len=0, speedLimit=44):
         super().__init__(id, len, speedLimit)
+
 
 class End(Track):
     def __init__(self, id=-1, len=0, speedLimit=44):
@@ -152,19 +215,16 @@ class End(Track):
 
 
 def main():
-    track = Track(len=500)
-    i1 = Intersection(times=[5,30])
-    t2 = Track(len=500)
-    i2 = Intersection(times=[5,30])
-    tEnd = End()
-    track.setNext(i1)
-    i1.setNext(t2)
-    t2.setNext(i2)
-    i2.setNext(tEnd)
-    track.addTrain(Train(6969))
 
+
+    tracks: list[Track] = [Track(len=500), Station(len=200, id="Coolidge"), Intersection(times = [5, 20]), Track(len=500), End()]
+    for i in range(len(tracks)):
+        if i+1!=len(tracks):
+            tracks[i].setNext(tracks[i+1])
+
+    tracks[0].addTrain(Train(6969))
     while True:
-        track.tick()
+        tracks[0].tick()
         time.sleep(.2)
 
 

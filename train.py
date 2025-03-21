@@ -81,6 +81,7 @@ class Train:
         elif self._state == State.BOARD:
             self._boardTimer -= 1
             if self._boardTimer <= 0:
+                self._hasBoarded = True
                 self._state = State.PENDING
         
 
@@ -134,7 +135,7 @@ class Train:
         return a
 
 
-    def updatePos(self)->None: 
+    def updatePos(self)->None: #NOTE: Check for acceleration bringing speed too high
         """Updates position based on acceleration and speed"""
         if self._speed > -1*self._acc:
             self._position+=self._speed + self._acc*0.5
@@ -163,7 +164,6 @@ class Train:
         """Tells the train to board passengers for time t"""
         self._state = State.BOARD
         self._boardTimer = t
-        self._hasBoarded = True
 
     def setMaxSpeed(self, speed:float)->None:
         """Set the max speed of the train on a type of track"""
@@ -188,6 +188,10 @@ class Train:
     def getPosition(self)->float:
         """Get the current position of the train"""
         return self._position
+    
+    def getState(self)->State:
+        """Return the state of the train"""
+        return self._state
     
     def __str__(self)->str:
         s =  f"Train {self._id} at position {self._position:.2f} is {stateToString(self._state)}. "

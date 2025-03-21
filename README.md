@@ -12,10 +12,10 @@ This is the third revision of this project, the first getting dropped after maki
 - Make a train!
 - Have the train go forward on a basic track
 - Make tracks for intersections
+- Make tracks for stations (basic 10 second timer for now)
 
 ### To-Do
 
-- Make tracks for stations (basic 10 second timer for now)
 - Combine my data with the MBTA's intersection data
 - Create a data importer for the combined track data
 - Export tests from multiple runs.
