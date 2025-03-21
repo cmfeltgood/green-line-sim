@@ -1,9 +1,11 @@
 from enum import Enum
+from collections.abc import Callable
 import warnings
 
 ACC = 4.1
-DEC = 5.1
+DEC = -5.1
 INVACC = 1/ACC
+INVDEC = 1/DEC
 
 class State(Enum):
     TARGET = 0
@@ -33,6 +35,7 @@ class Train:
         self._id = id
         self._state = State.TARGET
 
+        self._acc: float = 0
         self._speed:float = 0
         self._maxSpeed:float = maxSpeed
         self._position:float = 0
@@ -46,10 +49,22 @@ class Train:
         
         
     
-    def minTargetDist(self) -> float:
+    def minMaxTargetDist(self) -> tuple[float, float]:
         """Get the distance when the train will decelerate to match a target speed. \n
-        Uses acceleration value to naively deal with smooth->discrete innacuracies"""
-        return (self._targetSpeed**2-self._speed**2)*.5*INVACC
+        Uses acceleration value as a max, decceleration as min"""
+        x = (self._targetSpeed - self._speed)
+        max = -0.5*(x**2)*INVACC - self._speed*x*INVACC
+        min = 0.5*(x**2)*INVDEC + self._speed*x*INVDEC
+        return min, max+6 #+2 for error
+
+    def getStoppingLine(self) -> Callable[[float],tuple[float,float]]: #NOTE: Make return max dist as well as min for yellow lights
+        """Returns a function to find (min and max) how far train needs to slow down to a certain speed"""
+        def f(speed):
+            x = (speed - self._speed)
+            max = -0.5*(x**2)*INVACC - self._speed*x*INVACC
+            min = 0.5*(x**2)*INVDEC + self._speed*x*INVDEC
+            return min, max+6 #+2 for error
+        return f
     
 
     def tick(self)-> tuple[State, float, float]:
@@ -73,12 +88,9 @@ class Train:
 
         #Acceleration Logic
         elif self._state == State.ACCELERATE:
-            if self._speed < self._maxSpeed - ACC:
-                self._speed += ACC
-            else:
-                self._speed = self._maxSpeed
-            
-            self._position+=self._speed
+            self._acc = ACC
+            self.updatePos()
+
 
 
         #Target Speed logic
@@ -86,38 +98,55 @@ class Train:
             
             #If we should decelerate
             if self._targetSpeed < self._speed:
-                if self.minTargetDist() <= self._targetDist:
-                    if self._speed > DEC:
-                        self._speed -= DEC
-                    else: self._speed = 0
+                min, max = self.minMaxTargetDist()
+                #print(f"{min}, {self._targetDist}, {max}")
+                if min <= self._targetDist and max >= self._targetDist:
+                    self._acc = self.getTargetAcc()
                 
                 #accelerate unless it's close 
-                elif self.minTargetDist > self._targetDist+40: ###NOTE Value subject to change
-                    if self._speed < self._maxSpeed - ACC:
-                        self._speed += ACC
-                    else:
-                        self._speed = self._maxSpeed
-            
-            #elif we can go above target speed
-            elif self._targetDist > 40: ###NOTE Value subject to change
-                if self._speed < self._maxSpeed - ACC:
-                    self._speed += ACC
+                ###NOTE might add stay steady speed or something
                 else:
-                    self._speed = self._maxSpeed
+                    self._acc = ACC
+            
+            #elif we can go above target speed: I think this isn't needed? not entirely sure why I thought this was neccessary
+            # elif self._targetDist > 40: ###NOTE Value subject to change
             
             #elif we should treat target speed as max
             elif self._speed < self._targetSpeed:
-                if self._speed < self._targetSpeed - ACC:
-                    self._speed += ACC
-                else:
-                    self._speed = self._targetSpeed
+                self._acc = self.getTargetAcc()
+                if self._acc > ACC: #don't know if this is possible but wanna be safe
+                    self._acc = ACC
             
-            self._position+=self._speed
-            self._targetDist-=self._speed
+            self._targetDist-=self._speed + self._acc*0.5 #should be updated on next tick, but just in case
+            self.updatePos()
 
         
-        return self._state, self._speed, self._position #true for either stopping or boarding
-            
+        return self._state, self._speed, self._position
+    
+
+    def getTargetAcc(self)->float:
+        """Get acceleration to smoothly reach target"""
+        t = 2*(self._targetDist-1)/(self._targetSpeed + self._speed)
+        if t < 0:
+            self._speed = self._targetSpeed
+            return 0
+        a = (self._targetSpeed-self._speed)/t
+        return a
+
+
+    def updatePos(self)->None: 
+        """Updates position based on acceleration and speed"""
+        if self._speed > -1*self._acc:
+            self._position+=self._speed + self._acc*0.5
+        else:
+            t = -1*self._speed/self._acc
+            self._position+= 0.5*self._acc*(t**2) + self._speed*t
+
+        self._speed += self._acc
+        if self._speed < 0:
+            self._speed = 0
+        elif self._speed > self._maxSpeed:
+            self._speed = self._maxSpeed
 
     
     def targetSpeed(self, dist:float, speed:float=0)->None:
@@ -143,6 +172,10 @@ class Train:
     def getId(self):
         """Returns train's ID"""
         return self._id
+    
+    def setPosition(self, position:int)->None:
+        """Set the position of this train. Useful for moving to a new track"""
+        self._position = position
     
     def hasBoarded(self)->bool:
         """Return true if train has boarded at this track segment"""
@@ -223,7 +256,7 @@ class TrainQueue:
             self._start = n.getPrev()
             self._start.setNext(None)
         self._len-=1
-        return n
+        return n.getTrain()
     
 
     #Iterability so I can go through items easily later
