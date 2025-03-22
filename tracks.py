@@ -3,6 +3,7 @@ from collections.abc import Callable
 import time
 
 
+#NOTE: Currently, no implementation of speed limits. Assumed 44ft/s
 class Track:
     def __init__(self, id=-1, len=1000, speedLimit=44):
         self._trains:TrainQueue = TrainQueue()
@@ -24,7 +25,7 @@ class Track:
                 t.targetSpeed(dist, speed)
 
             t.tick()
-            print(t)
+            #print(t)
 
             #check if needs to move on
             if t.getPosition() > self._len:
@@ -51,6 +52,7 @@ class Track:
     def addTrain(self, train:Train)->None:
         """Add train to this track segment"""
         self._trains.add(train)
+        train.setMaxSpeed(self._speedLimit)
     
     def getNextSpeedChange(self, t:Train)->tuple[float, float]:
         """Returns the speed of and distance to the next speed change"""
@@ -63,6 +65,15 @@ class Track:
     
     def gnscRec(self, f:Callable[[float],tuple[float,float]], len:float, diff:float, speed:float, dist:float)->tuple[float, float]:
         """Recursive helper function for getNextSpeedChange()"""
+        min, max = f(self._speedLimit)
+        if min <= len and max >= len:
+            newDiff = max - len
+            if newDiff > diff:
+                if len > 500:
+                    return self._speedLimit, len
+                else:
+                    return self.getNext().gnscRec(f, len, newDiff, self._speedLimit, len)
+
         len+=self._len
         if len > 500:
             return speed, dist
@@ -145,7 +156,7 @@ class Station(Track):
                     t.targetSpeed(dist, speed)
 
                 t.tick()
-                print(t)
+                #print(t)
 
                 #check if needs to move on
                 if t.getPosition() > self._len:
@@ -161,7 +172,7 @@ class Station(Track):
                     if s==0:
                         t.board(self._boardTime)
         
-            print(t)
+            #print(f"{t} at station {self._id}")
 
         self._next.tick()
         
@@ -174,19 +185,31 @@ class Station(Track):
     
     def gnscRec(self, f:Callable[[float],tuple[float,float]], len:float, diff:float, speed:float, dist:float)->tuple[float, float]:
         """Recursive helper function for getNextSpeedChange()"""
-        
-        #If needs to stop, add stop
-        len+=self._len-20
-    
-        min, max = f(0)
-        #print(f"{min:.2f}, {len:.2f}, {max:.2f}")
+        #Slow for station, should be plenty of time to reach lower speed
+        min, max = f(self._speedLimit)
         if min <= len and max >= len:
             newDiff = max - len
             if newDiff > diff:
                 if len > 500:
-                    return 0, len
+                    return self._speedLimit, len
                 else:
-                    return self.getNext().gnscRec(f, len, newDiff, 0, len)
+                    return self.getNext().gnscRec(f, len, newDiff, self._speedLimit, len)
+        
+        
+                
+        
+        # #If needs to stop, add stop
+        # len+=self._len-20
+    
+        # min, max = f(0)
+        # #print(f"{min:.2f}, {len:.2f}, {max:.2f}")
+        # if min <= len and max >= len:
+        #     newDiff = max - len
+        #     if newDiff > diff:
+        #         if len > 500:
+        #             return 0, len
+        #         else:
+        #             return self.getNext().gnscRec(f, len, newDiff, 0, len)
         
         #Otherwise add nothing
         if len > 500:
@@ -197,35 +220,33 @@ class Station(Track):
 class Start(Track):
     def __init__(self, id=-1, len=0, speedLimit=44):
         super().__init__(id, len, speedLimit)
+    
+    def tick(self):
+        self._next.tick()
+    
+    def addTrain(self, train):
+        self._next.addTrain(train)
 
 
 class End(Track):
     def __init__(self, id=-1, len=0, speedLimit=44):
         super().__init__(id, len, speedLimit)
+        self._finished = None
     
     def gnscRec(self, f:Callable[[float],tuple[float,float]], len:float, diff:float, speed:float, dist:float)->tuple[float, float]:
         """Recursive helper function for getNextSpeedChange()"""
         return speed, dist
     
     def addTrain(self, train):
+        self._finished = train.getId()
         del train
     
     def tick(self):
         return None
+    
+    def getFinished(self):
+        id = self._finished
+        self._finished = None
+        return id
 
 
-def main():
-
-
-    tracks: list[Track] = [Track(len=500), Station(len=200, id="Coolidge"), Intersection(times = [5, 20]), Track(len=500), End()]
-    for i in range(len(tracks)):
-        if i+1!=len(tracks):
-            tracks[i].setNext(tracks[i+1])
-
-    tracks[0].addTrain(Train(6969))
-    while True:
-        tracks[0].tick()
-        time.sleep(.2)
-
-
-main()

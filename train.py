@@ -31,7 +31,7 @@ def stateToString(s:State)->str:
 
 
 class Train:
-    def __init__(self, id=0, maxSpeed:float=44): #max speed, and all speeds, in feet/sec
+    def __init__(self, id=0, maxSpeed:float=37): #max speed, and all speeds, in feet/sec
         self._id = id
         self._state = State.TARGET
 
@@ -51,19 +51,19 @@ class Train:
     
     def minMaxTargetDist(self) -> tuple[float, float]:
         """Get the distance when the train will decelerate to match a target speed. \n
-        Uses acceleration value as a max, decceleration as min"""
+        Uses decceleration as min, speed + min as max"""
         x = (self._targetSpeed - self._speed)
-        max = -0.5*(x**2)*INVACC - self._speed*x*INVACC
         min = 0.5*(x**2)*INVDEC + self._speed*x*INVDEC
-        return min, max+6 #+2 for error
+        max = min + self._speed*4 + 6 #+6 for error
+        return min, max
 
     def getStoppingLine(self) -> Callable[[float],tuple[float,float]]: #NOTE: Make return max dist as well as min for yellow lights
         """Returns a function to find (min and max) how far train needs to slow down to a certain speed"""
         def f(speed):
             x = (speed - self._speed)
-            max = -0.5*(x**2)*INVACC - self._speed*x*INVACC
             min = 0.5*(x**2)*INVDEC + self._speed*x*INVDEC
-            return min, max+6 #+2 for error
+            max = min + self._speed*4 + 6 #+6 for error
+            return min, max
         return f
     
 

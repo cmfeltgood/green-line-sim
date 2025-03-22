@@ -1,0 +1,49 @@
+type,length,id,max_speed,green,red,board_time
+Start,0,Saint Mary's Street,44,,,
+Track,333,,44,,,
+Intersection,0,,44,38,38,
+Track,522,,44,,,
+Intersection,0,,44,20,38,
+Track,169.1825459,,44,,,
+Station,150,Hawes Street,15,,,30
+Track,523.6952723,,44,,,
+Station,150,Kent Street,15,,,30
+Intersection,0,,44,39,53,
+Track,666.0105446,,44,,,
+Station,150,Saint Paul Street,15,,,30
+Intersection,0,,44,18,73,
+Track,572,,44,,,
+Intersection,0,,44,39,38,
+Track,303,,44,,,
+Intersection,0,,44,26,49,
+Track,128.3907054,,44,,,
+Station,150,Coolidge Corner,15,,,30
+Intersection,0,,44,40,35,
+Track,526,,44,,,
+Intersection,0,,44,43,66,
+Track,269,,44,,,
+Intersection,0,,44,25,48,
+Track,347.9093734,,44,,,
+Station,150,Summit Avenue,15,,,30
+Track,188,,44,,,
+Intersection,0,,44,38,72,
+Track,617.0099442,,44,,,
+Station,150,Brandon Hall,15,,,30
+Track,508.201519,,44,,,
+Station,150,Fairbanks Street,15,,,30
+Track,909.81854,,44,,,
+Station,150,Washington Square,15,,,30
+Intersection,0,,44,35,69,
+Track,886.3917585,,44,,,
+Station,150,Tappan Street,15,,,30
+Track,65,,44,,,
+Intersection,0,,44,17,19,
+Track,692.6724016,,44,,,
+Station,150,Dean Road,15,,,30
+Intersection,0,,44,27,62,
+Track,864,,44,,,
+Intersection,0,,44,15,60,
+Track,140.1927001,,44,,,
+Station,150,Englewood Avenue,15,,,30
+Track,941.6568176,,44,,,
+End,0,Cleaveland Circle,44,,,
