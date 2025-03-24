@@ -54,7 +54,7 @@ class Train:
         Uses decceleration as min, speed + min as max"""
         x = (self._targetSpeed - self._speed)
         min = 0.5*(x**2)*INVDEC + self._speed*x*INVDEC
-        max = min + self._speed*4 + 6 #+6 for error
+        max = 2*min + self._speed*4 + 6 #+6 for error
         return min, max
 
     def getStoppingLine(self) -> Callable[[float],tuple[float,float]]: #NOTE: Make return max dist as well as min for yellow lights
@@ -62,7 +62,7 @@ class Train:
         def f(speed):
             x = (speed - self._speed)
             min = 0.5*(x**2)*INVDEC + self._speed*x*INVDEC
-            max = min + self._speed*4 + 6 #+6 for error
+            max = 2*min + self._speed*4 + 6 #+6 for error
             return min, max
         return f
     

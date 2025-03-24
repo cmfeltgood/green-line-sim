@@ -1,6 +1,6 @@
 from train import TrainQueue, Train, State
 from collections.abc import Callable
-import time
+import random
 
 
 #NOTE: Currently, no implementation of speed limits. Assumed 44ft/s
@@ -72,14 +72,25 @@ class Track:
                 if len > 500:
                     return self._speedLimit, len
                 else:
-                    return self.getNext().gnscRec(f, len, newDiff, self._speedLimit, len)
+                    return self.getNext().gnscRec(f, len+self._len, newDiff, self._speedLimit, len)
 
         len+=self._len
         if len > 500:
             return speed, dist
         else:
             return self.getNext().gnscRec(f, len, diff, speed, dist)
+        
+    def getTrainData(self)->list:
+        """Get a list of data points from each train
+        I plan to add more, for now just the states"""
+        states = []
+        for t in self._trains:
+            states.append(t.getState())
 
+        return states
+    
+    def __str__(self)->str:
+        return f"Track {self._id} is a {type(self)}"
 
 class Intersection(Track):
     def __init__(self, id=-1, len=0, speedLimit=44, times:list[float] = [10, 10]):
@@ -95,10 +106,10 @@ class Intersection(Track):
 
         #NOTE: Make slightly more efficient
         self._timer-=1
-        if self._timer == 0:
+        if self._timer <= 0:
             self._stopped = not self._stopped
             self._timeIndex += 1
-            if self._timeIndex == len(self._times):
+            if self._timeIndex >= len(self._times):
                 self._timeIndex = 0
             self._timer = self._times[self._timeIndex]
         
@@ -108,6 +119,8 @@ class Intersection(Track):
         #     print("GO")
         
         self._next.tick()
+        # if self._id=="why":
+        #     print(self._stopped)
     
     def setTimes(self, times:list[float])->None:
         """Set the times for the intersection. Only cares about times for the train.
@@ -118,7 +131,7 @@ class Intersection(Track):
         """Recursive helper function for getNextSpeedChange()"""
         
         #If needs to stop, add stop
-        if self._stopped or self._timer < 3:
+        if self._stopped or self._timer <= 3:
             min, max = f(0)
             #print(f"{min:.2f}, {len:.2f}, {max:.2f}")
             if min <= len and max >= len:
@@ -137,6 +150,20 @@ class Intersection(Track):
     def addTrain(self, train)->None:
         """Should be no trains on a track with no length"""
         self.getNext().addTrain(train)
+    
+    def shuffleTimer(self):
+        """Shuffles the timer to a random time"""
+        timer = random.randint(1, sum(self._times))
+        i = 0
+        while timer > self._times[i]:
+            timer -= self._times[i]
+            i+=1
+        
+        self._timer = timer
+        self._timeIndex = i
+        self._stopped = (i%2 == 1)
+        #print(self._times)
+        
 
 
 class Station(Track):
@@ -193,7 +220,7 @@ class Station(Track):
                 if len > 500:
                     return self._speedLimit, len
                 else:
-                    return self.getNext().gnscRec(f, len, newDiff, self._speedLimit, len)
+                    return self.getNext().gnscRec(f, len+self._len, newDiff, self._speedLimit, len)
         
         
                 
@@ -212,6 +239,7 @@ class Station(Track):
         #             return self.getNext().gnscRec(f, len, newDiff, 0, len)
         
         #Otherwise add nothing
+        len+=self._len
         if len > 500:
             return speed, dist
         return self.getNext().gnscRec(f, len, diff, speed, dist)
@@ -235,7 +263,14 @@ class End(Track):
     
     def gnscRec(self, f:Callable[[float],tuple[float,float]], len:float, diff:float, speed:float, dist:float)->tuple[float, float]:
         """Recursive helper function for getNextSpeedChange()"""
+        min, max = f(self._speedLimit)
+        if min <= len and max >= len:
+            newDiff = max - len
+            if newDiff > diff:
+                return self._speedLimit, len
+
         return speed, dist
+
     
     def addTrain(self, train):
         self._finished = train.getId()
