@@ -25,7 +25,7 @@ class Track:
                 t.targetSpeed(dist, speed)
 
             t.tick()
-            #print(t)
+            #print(f"{t} on track {self._id}")
 
             #check if needs to move on
             if t.getPosition() > self._len:
@@ -65,14 +65,15 @@ class Track:
     
     def gnscRec(self, f:Callable[[float],tuple[float,float]], len:float, diff:float, speed:float, dist:float)->tuple[float, float]:
         """Recursive helper function for getNextSpeedChange()"""
-        min, max = f(self._speedLimit)
-        if min <= len and max >= len:
-            newDiff = max - len
-            if newDiff > diff:
-                if len > 500:
-                    return self._speedLimit, len
-                else:
-                    return self.getNext().gnscRec(f, len+self._len, newDiff, self._speedLimit, len)
+        if speed == None or self._speedLimit < speed:
+            min, max = f(self._speedLimit)
+            if min <= len and max >= len:
+                newDiff = len - min
+                if newDiff > diff:
+                    if len > 500:
+                        return self._speedLimit, len
+                    else:
+                        return self.getNext().gnscRec(f, len+self._len, newDiff, self._speedLimit, len)
 
         len+=self._len
         if len > 500:
@@ -131,16 +132,19 @@ class Intersection(Track):
         """Recursive helper function for getNextSpeedChange()"""
         
         #If needs to stop, add stop
-        if self._stopped or self._timer <= 3:
-            min, max = f(0)
-            #print(f"{min:.2f}, {len:.2f}, {max:.2f}")
-            if min <= len and max >= len:
-                newDiff = max - len
-                if newDiff > diff:
-                    if len > 500:
-                        return 0, len
-                    else:
-                        return self.getNext().gnscRec(f, len, newDiff, 0, len)
+        if speed == None or speed != 0:
+            if self._stopped or self._timer <= 4:
+                min, max = f(0)
+                #print(f"{min:.2f}, {len:.2f}, {max:.2f}")
+                if min <= len and max >= len:
+                    newDiff = len - min
+                    # if self._id == "dei2":
+                    #     print(newDiff)
+                    if newDiff > diff:
+                        if len > 500:
+                            return 0, len #NOTE: For a speed of 0, not necessary to continue recursion?
+                        else:
+                            return self.getNext().gnscRec(f, len, newDiff, 0, len)
         
         #Otherwise add nothing
         if len > 500:
@@ -149,6 +153,8 @@ class Intersection(Track):
     
     def addTrain(self, train)->None:
         """Should be no trains on a track with no length"""
+        if self._stopped:
+            print(f"SKIPPED A RED WEEWOO: {self._times[self._timeIndex]-self._timer} OVER!!! ({self._id})")
         self.getNext().addTrain(train)
     
     def shuffleTimer(self):
@@ -206,21 +212,26 @@ class Station(Track):
         #trains should still be in order
         #NOTE: Make sure trains are in order
         for i in range(needsPopped):
-            self._next.addTrain(self._trains.pop())
+            t = self._trains.pop()
+            t._hasBoarded = False
+            self._next.addTrain(t)
         
 
     
     def gnscRec(self, f:Callable[[float],tuple[float,float]], len:float, diff:float, speed:float, dist:float)->tuple[float, float]:
         """Recursive helper function for getNextSpeedChange()"""
         #Slow for station, should be plenty of time to reach lower speed
-        min, max = f(self._speedLimit)
-        if min <= len and max >= len:
-            newDiff = max - len
-            if newDiff > diff:
-                if len > 500:
-                    return self._speedLimit, len
-                else:
-                    return self.getNext().gnscRec(f, len+self._len, newDiff, self._speedLimit, len)
+        if speed == None or self._speedLimit < speed:
+            min, max = f(self._speedLimit)
+            if min <= len and max >= len:
+                newDiff = len - min
+                # if self._id == "Englewood Avenue":
+                #     print(newDiff)
+                if newDiff > diff:
+                    if len > 500:
+                        return self._speedLimit, len
+                    else:
+                        return self.getNext().gnscRec(f, len+self._len, newDiff, self._speedLimit, len)
         
         
                 
@@ -263,11 +274,12 @@ class End(Track):
     
     def gnscRec(self, f:Callable[[float],tuple[float,float]], len:float, diff:float, speed:float, dist:float)->tuple[float, float]:
         """Recursive helper function for getNextSpeedChange()"""
-        min, max = f(self._speedLimit)
-        if min <= len and max >= len:
-            newDiff = max - len
-            if newDiff > diff:
-                return self._speedLimit, len
+        if speed == None or self._speedLimit < speed:
+            min, max = f(self._speedLimit)
+            if min <= len and max >= len:
+                newDiff = len - min
+                if newDiff > diff:
+                    return self._speedLimit, len
 
         return speed, dist
 

@@ -1,5 +1,6 @@
 from tracks import *
 from train import Train
+import time
 
 def strTime(sec: int)->str:
     return f"{sec//60}:{sec%60}"
@@ -20,6 +21,8 @@ def shuffleTimers(t: Track):
 def main():
     start: Start = None
     end: End = None
+
+    trackPlaces = {} # {id: {'start':(x,y), 'end':(x,y)}}
 
     f = open("outbound_observed.csv", "r")
     lines = f.readlines()
@@ -58,7 +61,7 @@ def main():
     shuffleTimers(start)
 
 
-    while id != 1001:
+    while id != 1000:
         start.tick()
         timer += 1
         id = end.getFinished()
@@ -73,7 +76,7 @@ def main():
             shuffleTimers(start)
 
 
-        # time.sleep(.02)
+        #time.sleep(.1)
     
 
     times.sort()
